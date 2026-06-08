@@ -1,0 +1,30 @@
+[project]
+name = "my-claude-code"
+version = "0.1.0"
+description = "Python 版 Claude Code / MiniCode 风格终端编码助手"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+
+dependencies = [
+    "click>=8.0",
+    "httpx>=0.25",
+    "pydantic>=2.0",
+    "rich>=13.0",
+]
+
+[project.scripts]
+minicode = "mini_code.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["mini_code*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
