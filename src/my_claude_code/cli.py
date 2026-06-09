@@ -85,3 +85,7 @@ def config(provider: str | None, model: str | None):
     click.echo(f"api_key:        ***{masked}")
     click.echo(f"max_output_tokens: {s.max_output_tokens}")
     click.echo(f"available providers: {', '.join(sorted(s.providers))}")
+
+
+if __name__ == "__main__":
+    main()
