@@ -4,7 +4,7 @@
 
 P0 目标是把仓库整理成“可运行空壳”：命名统一、Python 包可安装、CLI 可启动、分层目录就位、测试和 lint 能跑。
 
-本阶段不实现 agent loop、模型调用、工具执行和权限逻辑，只为后续 P1-P5 铺好结构。
+本阶段不实现 agent loop、真实模型调用、工具执行和权限逻辑，只为后续 P1-P5 铺好结构。项目不设计离线 provider 替身；P1 开始直接接入真实 Anthropic 文本闭环。
 
 命名约定：
 
@@ -105,7 +105,7 @@ ruff check src tests
 
 ## Assumptions
 
-- P0 不实现真实配置读取、模型适配器、agent loop、工具注册或 TUI。
+- P0 不实现真实配置读取、Anthropic 适配器、agent loop、工具注册或 TUI。
 - P0 不创建 `sessions/`、`context_management/`、`tui/`、`mcp/`、`agents/`、`hooks/`。
 - 旧规划里的 `mini_code` / `minicode` 都视为历史命名。
 - P0 统一替换为 `my_claude_code` / `my-claude`。

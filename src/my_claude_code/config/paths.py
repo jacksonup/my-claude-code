@@ -5,9 +5,10 @@ from pathlib import Path
 
 
 def _home() -> Path:
-    return Path(os.environ.get("MINI_CODE_HOME", Path.home() / ".mini-code"))
+    return Path(os.environ.get("MY_CLAUDE_HOME", Path.home() / ".my-claude-code"))
 
 
 SETTINGS_DIR = _home()
+SETTINGS_FILE = SETTINGS_DIR / "settings.json"
 PROJECTS_DIR = _home() / "projects"
 TOOL_RESULTS_DIR = _home() / "tool-results"

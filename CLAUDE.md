@@ -6,6 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 详见 [AGENTS.md](./AGENTS.md)，此处只补充 Claude Code 专属内容。
 
+## 硬性约束
+
+- 不实现、不保留、不新增 mock provider、mock 模型、离线模型替身或 `--mock` 启动模式。
+- 运行时只能接真实 provider；当前优先支持 Anthropic 与 DeepSeek/OpenAI-compatible。
+- 单元测试可以用局部 fake/stub 验证纯逻辑，但测试替身不能进入运行时代码路径。
+- 如代码、README、计划与本约束冲突，先修正文档和代码再继续实现。
+
 ## 技术选型
 
 | 层 | 选型 |

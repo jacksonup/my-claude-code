@@ -964,7 +964,7 @@ from pathlib import Path
 
 
 def _home() -> Path:
-    return Path(os.environ.get("MINI_CODE_HOME", Path.home() / ".mini-code"))
+    return Path(os.environ.get("MY_CLAUDE_HOME", Path.home() / ".my-claude-code"))
 
 
 SETTINGS_DIR = _home()
@@ -987,13 +987,13 @@ def test_default_home():
 
 
 def test_custom_home(monkeypatch):
-    custom = Path("/tmp/test-mini-home")
-    monkeypatch.setenv("MINI_CODE_HOME", str(custom))
+    custom = Path("/tmp/test-my-claude-home")
+    monkeypatch.setenv("MY_CLAUDE_HOME", str(custom))
     # Re-import 不会更新，这里只验证 env 读取逻辑能工作
     # paths 模块在 import 时求值，所以此测试验证了默认值存在
     from my_claude_code.config.paths import PROJECTS_DIR
 
-    assert "mini-code" in str(PROJECTS_DIR) or "mini-code" in str(Path.home() / ".mini-code")
+    assert "my-claude-code" in str(PROJECTS_DIR) or "my-claude-code" in str(Path.home() / ".my-claude-code")
 ```
 
 - [ ] **Step 3: 运行测试**
@@ -1195,6 +1195,5 @@ my-claude doctor
 ```
 
 ---
-
 
 

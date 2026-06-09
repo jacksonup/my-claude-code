@@ -1,6 +1,6 @@
 """模型适配器抽象接口。
 
-所有模型适配器（Anthropic、mock、未来可能接入的其他厂商）都实现此接口。
+所有真实模型适配器（Anthropic、DeepSeek、OpenAI-compatible 等）都实现此接口。
 只暴露内部类型，不泄漏外部 API 细节。
 """
 

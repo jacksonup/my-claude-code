@@ -1,6 +1,6 @@
-"""Anthropic Messages API 适配器。
+"""OpenAI 兼容 API 适配器（DeepSeek / GPT / 其他 OpenAI 格式提供方）。
 
-仅处理文本回复；不做 tool call、streaming、thinking block。
+仅处理文本回复；不做 tool call、streaming。
 配置由 RuntimeSettings 注入，不自行读取环境变量。
 """
 
@@ -25,14 +25,18 @@ if TYPE_CHECKING:
     )
 
 
-def _to_api_messages(messages: list[ChatMessage]) -> list[dict]:
-    api_msgs = []
+def _to_chat_completion_messages(
+    messages: list[ChatMessage], system_prompt: str = ""
+) -> list[dict]:
+    result: list[dict] = []
+    if system_prompt:
+        result.append({"role": "system", "content": system_prompt})
     for m in messages:
         if m.role.value == "user":
-            api_msgs.append({"role": "user", "content": m.content})
+            result.append({"role": "user", "content": m.content})
         elif m.role.value == "assistant":
-            api_msgs.append({"role": "assistant", "content": m.content})
-    return api_msgs
+            result.append({"role": "assistant", "content": m.content})
+    return result
 
 
 def _should_retry(status: int) -> bool:
@@ -49,32 +53,33 @@ def _calc_delay(retry_count: int, retry_after: str | None = None) -> float:
     return base + random.uniform(0, 1)
 
 
-def _parse_response(body: dict) -> tuple[str, list, ProviderUsage, StepDiagnostics]:
+def _parse_chat_completion(body: dict) -> tuple[str, list, ProviderUsage, StepDiagnostics]:
     from my_claude_code.core.types import ProviderUsage, StepDiagnostics
 
-    text_parts = []
-    for block in body.get("content", []):
-        if block["type"] == "text":
-            text_parts.append(block["text"])
+    choices = body.get("choices", [])
+    text = ""
+    stop_reason = ""
+    if choices:
+        msg = choices[0].get("message", {})
+        text = msg.get("content") or ""
+        stop_reason = choices[0].get("finish_reason", "")
 
     usage_data = body.get("usage", {})
     usage = ProviderUsage(
-        input_tokens=usage_data.get("input_tokens", 0),
-        output_tokens=usage_data.get("output_tokens", 0),
-        cache_read_tokens=usage_data.get("cache_read_input_tokens", 0),
-        cache_write_tokens=usage_data.get("cache_creation_input_tokens", 0),
+        input_tokens=usage_data.get("prompt_tokens", 0),
+        output_tokens=usage_data.get("completion_tokens", 0),
     )
 
-    diag = StepDiagnostics(stop_reason=body.get("stop_reason", ""), usage=usage)
-    return "".join(text_parts), [], usage, diag
+    diag = StepDiagnostics(stop_reason=stop_reason, usage=usage)
+    return text, [], usage, diag
 
 
-class AnthropicAdapter(ModelAdapter):
-    """Anthropic Messages API 适配器。"""
+class OpenAICompatibleAdapter(ModelAdapter):
+    """OpenAI /chat/completions 兼容适配器。"""
 
     MAX_RETRIES = 3
 
-    def __init__(self, settings: RuntimeSettings, timeout: float = 60.0):
+    def __init__(self, settings: RuntimeSettings, timeout: float = 120.0):
         self._api_key = settings.api_key
         self._base_url = settings.base_url.rstrip("/")
         self._model = settings.model
@@ -95,31 +100,29 @@ class AnthropicAdapter(ModelAdapter):
         from my_claude_code.core.types import ProviderUsage, StepDiagnostics
 
         if not self._api_key:
-            raise RuntimeError("ANTHROPIC_API_KEY 未设置")
+            raise RuntimeError("OPENAI_API_KEY 未设置")
 
-        api_messages = _to_api_messages(messages)
+        api_messages = _to_chat_completion_messages(messages, system_prompt)
         headers = {
-            "x-api-key": self._api_key,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json",
+            "Authorization": f"Bearer {self._api_key}",
+            "Content-Type": "application/json",
         }
 
         last_error: str | None = None
         for retry in range(self.MAX_RETRIES + 1):
             async with httpx.AsyncClient(timeout=self._timeout) as client:
                 resp = await client.post(
-                    f"{self._base_url}/v1/messages",
+                    f"{self._base_url}/chat/completions",
                     headers=headers,
                     json={
                         "model": self._model,
                         "max_tokens": max_output_tokens,
-                        "system": system_prompt,
                         "messages": api_messages,
                     },
                 )
 
             if resp.is_success:
-                return _parse_response(resp.json())
+                return _parse_chat_completion(resp.json())
 
             if retry < self.MAX_RETRIES and _should_retry(resp.status_code):
                 delay = _calc_delay(retry, resp.headers.get("retry-after"))

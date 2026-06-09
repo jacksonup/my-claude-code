@@ -48,14 +48,40 @@ def doctor():
 
 
 @main.command()
-@click.option("--model", default=None, help="模型名（mock 为离线模式）")
+@click.option("--model", default=None, help="模型名")
+@click.option("--provider", default=None, help="提供方: anthropic | openai | deepseek")
 @click.option("--prompt", "-p", default="Hello", help="用户输入")
-def chat(model: str | None, prompt: str):
+def chat(model: str | None, provider: str | None, prompt: str):
     """单轮对话 — 验证模型链路。"""
-    from my_claude_code.runtime.app import create_model, run_chat
+    from my_claude_code.runtime.app import create_model, load_settings, run_chat
 
-    adapter = create_model(model)
-    click.echo(f"[model: {adapter.model_name}]")
+    try:
+        settings = load_settings(provider=provider, model_name=model)
+        adapter = create_model(settings)
+    except (RuntimeError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from exc
 
-    text = asyncio.run(run_chat(adapter, prompt))
+    click.echo(f"[provider: {settings.provider}, model: {adapter.model_name}]")
+    text = asyncio.run(run_chat(adapter, prompt, max_output_tokens=settings.max_output_tokens))
     click.echo(text)
+
+
+@main.command()
+@click.option("--provider", default=None, help="提供方: anthropic | openai | deepseek")
+@click.option("--model", default=None, help="模型名")
+def config(provider: str | None, model: str | None):
+    """展示当前解析后的运行时配置。"""
+    from my_claude_code.runtime.app import load_settings
+
+    try:
+        s = load_settings(provider=provider, model_name=model)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    masked = s.api_key[-4:] if s.api_key else "(not set)"
+    click.echo(f"provider:       {s.provider}")
+    click.echo(f"model:          {s.model}")
+    click.echo(f"base_url:       {s.base_url}")
+    click.echo(f"api_key:        ***{masked}")
+    click.echo(f"max_output_tokens: {s.max_output_tokens}")
+    click.echo(f"available providers: {', '.join(sorted(s.providers))}")

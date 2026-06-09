@@ -17,9 +17,15 @@
 - 可以参考、借鉴、复制现有 Python 版本中的实现，但需要重新整理结构，保持模块边界清晰。
 - 功能设计优先对齐 Claude Code 的产品和交互理念。
 - 工程实现优先参考 MiniCode 的轻量架构和可读性。
+- 硬性约束：不实现、不保留、不新增 mock provider、mock 模型、离线模型替身或 `--mock` 启动模式。
+- 单元测试可以用局部 fake/stub 验证纯逻辑，但这些测试替身不能进入运行时代码路径。
 - 每次扩展功能时，先明确它属于 agent loop、tool system、permission、session、TUI、memory、skills、MCP 或 context management 中的哪一层。
 - 保持文档和代码同步；新增关键模块时，补充对应说明。
+- 单元测试只覆盖纯逻辑和转换逻辑；真实模型 API 行为放到显式集成测试中，通过环境变量启用。
+- 每个核心模块至少一个测试文件，关注闭环而不是覆盖率数字。
 
-## 当前规划文档
+## 文档索引
 
 - Python 改写计划：`docs/MiniCode-python-rewrite-plan.md`
+- P0 项目骨架计划：`docs/plan/P0-project-skeleton.md`
+- 代码规范：`docs/engineering/code-standards.md`
